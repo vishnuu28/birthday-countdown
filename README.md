@@ -56,6 +56,7 @@ git push -u origin main
 ### Step 4: Access Your Live Website
 
 Your website will be available at:
+
 ```
 https://YOUR_USERNAME.github.io/birthday-countdown/
 ```
@@ -92,4 +93,3 @@ birthday/
 ---
 
 Made with ❤️ for someone special
-
