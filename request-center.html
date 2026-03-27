@@ -3,84 +3,50 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Relationship Request Center</title>
+    <title>For My Love</title>
     <link rel="stylesheet" href="style.css" />
-    <script
-      src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"
-      defer
-    ></script>
   </head>
   <body>
     <div class="hearts-container"></div>
     <div class="container request-center-container">
       <div class="header">
-        <h1 class="title">Relationship Request Center</h1>
+        <h1 class="title">For My Love 💗</h1>
         <p class="subtitle">
-          Send requests, apology charges, and track all pending actions.
+          A cute little space only for you to write your wishes.
         </p>
         <div class="request-nav">
           <a class="open-request-tab-btn" href="index.html">Back to Countdown</a>
         </div>
       </div>
 
-      <section class="request-panel">
-        <h2 class="section-title">Request Form</h2>
+      <section class="request-panel cute-panel">
+        <h2 class="section-title">Wish Corner 💌</h2>
         <p class="panel-help">
-          She can write her request here. On submit, an email goes to your email
-          and a confirmation email goes to her account.
+          Write anything you want. I will check this and complete your wish.
         </p>
         <form id="requestForm" class="panel-form">
-          <div class="form-grid">
-            <label>
-              Your Name
-              <input
-                id="requesterName"
-                type="text"
-                placeholder="Enter name"
-                required
-              />
-            </label>
-            <label>
-              Your Email
-              <input
-                id="requesterEmail"
-                type="email"
-                placeholder="example@email.com"
-                required
-              />
-            </label>
-            <label>
-              Boyfriend Email
-              <input
-                id="boyfriendEmail"
-                type="email"
-                placeholder="where request should arrive"
-                required
-              />
-            </label>
-          </div>
           <label>
-            Request Message
+            Your Wish
             <textarea
               id="requestMessage"
               rows="4"
-              placeholder="Write your request..."
+              placeholder="Baby, write your wish here..."
               required
             ></textarea>
           </label>
-          <button type="submit" class="panel-btn">Send Request</button>
+          <button type="submit" class="panel-btn">Save Wish</button>
           <p id="requestStatusMessage" class="status-message"></p>
         </form>
       </section>
 
-      <section class="request-panel">
-        <h2 class="section-title">Charge Area (Apology + Punishment)</h2>
+      <section class="request-panel cute-panel">
+        <h2 class="section-title">Sorry Zone 😔💞</h2>
         <p class="panel-help">
-          Add the mistake, ask for apology, and define punishment.
+          When I make a mistake, write the apology request and punishment here.
         </p>
         <form id="chargeForm" class="panel-form">
           <label>
-            Mistake Details
+            Mistake
             <textarea
               id="mistakeDetails"
               rows="3"
@@ -89,11 +55,11 @@
             ></textarea>
           </label>
           <label>
-            Apology Message
+            Apology You Want
             <textarea
               id="apologyMessage"
               rows="3"
-              placeholder="Write apology request..."
+              placeholder="How should I apologize?"
               required
             ></textarea>
           </label>
@@ -106,21 +72,19 @@
               required
             />
           </label>
-          <button type="submit" class="panel-btn">Add Charge</button>
+          <button type="submit" class="panel-btn">Add to Sorry List</button>
         </form>
       </section>
 
-      <section class="request-panel">
-        <h2 class="section-title">Request TODO Table</h2>
+      <section class="request-panel cute-panel">
+        <h2 class="section-title">Wish TODO Table ✨</h2>
         <div class="table-wrapper">
           <table class="todo-table" id="requestTodoTable">
             <thead>
               <tr>
                 <th>Date</th>
-                <th>Request</th>
-                <th>From</th>
-                <th>To</th>
-                <th>Email Sent</th>
+                <th>Wish</th>
+                <th>Done</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -128,8 +92,8 @@
         </div>
       </section>
 
-      <section class="request-panel">
-        <h2 class="section-title">Punishment TODO Table</h2>
+      <section class="request-panel cute-panel">
+        <h2 class="section-title">Punishment TODO Table 📝</h2>
         <div class="table-wrapper">
           <table class="todo-table" id="punishmentTodoTable">
             <thead>
@@ -159,13 +123,6 @@
         punishmentRows: "relationship_punishment_rows",
       };
 
-      const emailConfig = {
-        publicKey: "YOUR_EMAILJS_PUBLIC_KEY",
-        requestServiceId: "YOUR_EMAILJS_SERVICE_ID",
-        requestTemplateId: "YOUR_REQUEST_TEMPLATE_ID",
-        confirmationTemplateId: "YOUR_CONFIRM_TEMPLATE_ID",
-      };
-
       let requestRows = JSON.parse(localStorage.getItem(storageKeys.requestRows) || "[]");
       let punishmentRows = JSON.parse(localStorage.getItem(storageKeys.punishmentRows) || "[]");
 
@@ -185,14 +142,12 @@
           tr.innerHTML = `
             <td>${formatDate(row.createdAt)}</td>
             <td>${row.request}</td>
-            <td>${row.fromEmail}</td>
-            <td>${row.toEmail}</td>
             <td>
               <label class="toggle-label">
                 <input type="checkbox" data-request-index="${index}" ${
-            row.emailSent ? "checked" : ""
+            row.done ? "checked" : ""
           } />
-                <span>${row.emailSent ? "Done" : "Pending"}</span>
+                <span>${row.done ? "Done" : "Pending"}</span>
               </label>
             </td>
           `;
@@ -227,83 +182,19 @@
         renderPunishmentTable();
       }
 
-      function isEmailConfigured() {
-        return (
-          !emailConfig.publicKey.includes("YOUR_") &&
-          !emailConfig.requestServiceId.includes("YOUR_") &&
-          !emailConfig.requestTemplateId.includes("YOUR_") &&
-          !emailConfig.confirmationTemplateId.includes("YOUR_")
-        );
-      }
-
-      function initializeEmailJS() {
-        if (window.emailjs && isEmailConfigured()) {
-          window.emailjs.init({
-            publicKey: emailConfig.publicKey,
-          });
-          return true;
-        }
-        return false;
-      }
-
-      requestForm.addEventListener("submit", async (event) => {
+      requestForm.addEventListener("submit", (event) => {
         event.preventDefault();
 
-        const requesterName = document.getElementById("requesterName").value.trim();
-        const requesterEmail = document.getElementById("requesterEmail").value.trim();
-        const boyfriendEmail = document.getElementById("boyfriendEmail").value.trim();
         const requestMessage = document.getElementById("requestMessage").value.trim();
 
-        const requestRow = {
+        requestRows.unshift({
           createdAt: Date.now(),
           request: requestMessage,
-          fromEmail: requesterEmail,
-          toEmail: boyfriendEmail,
-          emailSent: false,
-        };
+          done: false,
+        });
 
-        requestRows.unshift(requestRow);
-
-        const canSendEmail = initializeEmailJS();
-        if (!canSendEmail) {
-          requestStatusMessage.textContent =
-            "Saved in TODO table. To send real emails, set EmailJS keys inside request-center.html.";
-          requestStatusMessage.className = "status-message warning";
-          persistRows();
-          renderTables();
-          requestForm.reset();
-          return;
-        }
-
-        const templateData = {
-          requester_name: requesterName,
-          requester_email: requesterEmail,
-          boyfriend_email: boyfriendEmail,
-          request_message: requestMessage,
-        };
-
-        try {
-          await window.emailjs.send(
-            emailConfig.requestServiceId,
-            emailConfig.requestTemplateId,
-            templateData
-          );
-
-          await window.emailjs.send(
-            emailConfig.requestServiceId,
-            emailConfig.confirmationTemplateId,
-            templateData
-          );
-
-          requestRow.emailSent = true;
-          requestStatusMessage.textContent =
-            "Request email sent to boyfriend and confirmation sent to her email.";
-          requestStatusMessage.className = "status-message success";
-        } catch (error) {
-          requestStatusMessage.textContent =
-            "Request saved, but email failed. Check EmailJS setup and try again.";
-          requestStatusMessage.className = "status-message error";
-        }
+        requestStatusMessage.textContent = "Saved with love 💖";
+        requestStatusMessage.className = "status-message success";
 
         persistRows();
         renderTables();
@@ -333,7 +224,7 @@
       requestTodoBody.addEventListener("change", (event) => {
         if (!event.target.matches("[data-request-index]")) return;
         const index = Number(event.target.dataset.requestIndex);
-        requestRows[index].emailSent = event.target.checked;
+        requestRows[index].done = event.target.checked;
         persistRows();
         renderRequestTable();
       });
@@ -346,7 +237,6 @@
         renderPunishmentTable();
       });
 
-      // Floating heart animation reused from home page style.
       const heartsContainer = document.querySelector(".hearts-container");
       const hearts = ["❤️", "💕", "💖", "💗", "💓", "💝"];
       function createHeart() {
