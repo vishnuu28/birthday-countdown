@@ -545,6 +545,137 @@ body {
   font-size: 1.1rem;
 }
 
+.request-nav {
+  margin-top: 20px;
+}
+
+.open-request-tab-btn {
+  display: inline-block;
+  text-decoration: none;
+  background: linear-gradient(135deg, #f5576c 0%, #764ba2 100%);
+  color: #fff;
+  font-weight: 600;
+  padding: 12px 22px;
+  border-radius: 999px;
+  box-shadow: 0 8px 20px rgba(118, 75, 162, 0.35);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.open-request-tab-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(118, 75, 162, 0.45);
+}
+
+.request-center-container {
+  max-width: 1100px;
+}
+
+.request-panel {
+  margin-top: 28px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(118, 75, 162, 0.2);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(118, 75, 162, 0.12);
+}
+
+.panel-help {
+  color: #666;
+  margin: 8px 0 18px 0;
+}
+
+.panel-form label {
+  display: block;
+  margin-bottom: 14px;
+  font-weight: 600;
+  color: #4d4d4d;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.panel-form input,
+.panel-form textarea {
+  width: 100%;
+  margin-top: 6px;
+  border-radius: 12px;
+  border: 1px solid rgba(118, 75, 162, 0.25);
+  padding: 10px 12px;
+  font-size: 0.98rem;
+  font-family: inherit;
+  background: #fff;
+}
+
+.panel-form input:focus,
+.panel-form textarea:focus {
+  outline: none;
+  border-color: #764ba2;
+  box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.12);
+}
+
+.panel-btn {
+  border: none;
+  cursor: pointer;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  font-weight: 700;
+  padding: 10px 18px;
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.25);
+}
+
+.status-message {
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+.status-message.success {
+  color: #127d3a;
+}
+
+.status-message.error {
+  color: #b3122a;
+}
+
+.status-message.warning {
+  color: #9c5c00;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.todo-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.todo-table th,
+.todo-table td {
+  border-bottom: 1px solid #ececec;
+  padding: 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.todo-table th {
+  background: #f2edff;
+  color: #4d3d77;
+}
+
+.toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 @media (max-width: 768px) {
   .title {
     font-size: 2.5rem;

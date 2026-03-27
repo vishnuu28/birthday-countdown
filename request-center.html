@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Relationship Request Center</title>
+    <link rel="stylesheet" href="style.css" />
+    <script
+      src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"
+      defer
+    ></script>
+  </head>
+  <body>
+    <div class="hearts-container"></div>
+    <div class="container request-center-container">
+      <div class="header">
+        <h1 class="title">Relationship Request Center</h1>
+        <p class="subtitle">
+          Send requests, apology charges, and track all pending actions.
+        </p>
+        <div class="request-nav">
+          <a class="open-request-tab-btn" href="index.html">Back to Countdown</a>
+        </div>
+      </div>
+
+      <section class="request-panel">
+        <h2 class="section-title">Request Form</h2>
+        <p class="panel-help">
+          She can write her request here. On submit, an email goes to your email
+          and a confirmation email goes to her account.
+        </p>
+        <form id="requestForm" class="panel-form">
+          <div class="form-grid">
+            <label>
+              Your Name
+              <input
+                id="requesterName"
+                type="text"
+                placeholder="Enter name"
+                required
+              />
+            </label>
+            <label>
+              Your Email
+              <input
+                id="requesterEmail"
+                type="email"
+                placeholder="example@email.com"
+                required
+              />
+            </label>
+            <label>
+              Boyfriend Email
+              <input
+                id="boyfriendEmail"
+                type="email"
+                placeholder="where request should arrive"
+                required
+              />
+            </label>
+          </div>
+          <label>
+            Request Message
+            <textarea
+              id="requestMessage"
+              rows="4"
+              placeholder="Write your request..."
+              required
+            ></textarea>
+          </label>
+          <button type="submit" class="panel-btn">Send Request</button>
+          <p id="requestStatusMessage" class="status-message"></p>
+        </form>
+      </section>
+
+      <section class="request-panel">
+        <h2 class="section-title">Charge Area (Apology + Punishment)</h2>
+        <p class="panel-help">
+          Add the mistake, ask for apology, and define punishment.
+        </p>
+        <form id="chargeForm" class="panel-form">
+          <label>
+            Mistake Details
+            <textarea
+              id="mistakeDetails"
+              rows="3"
+              placeholder="What mistake happened?"
+              required
+            ></textarea>
+          </label>
+          <label>
+            Apology Message
+            <textarea
+              id="apologyMessage"
+              rows="3"
+              placeholder="Write apology request..."
+              required
+            ></textarea>
+          </label>
+          <label>
+            Punishment
+            <input
+              id="punishmentText"
+              type="text"
+              placeholder="Write punishment..."
+              required
+            />
+          </label>
+          <button type="submit" class="panel-btn">Add Charge</button>
+        </form>
+      </section>
+
+      <section class="request-panel">
+        <h2 class="section-title">Request TODO Table</h2>
+        <div class="table-wrapper">
+          <table class="todo-table" id="requestTodoTable">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Request</th>
+                <th>From</th>
+                <th>To</th>
+                <th>Email Sent</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="request-panel">
+        <h2 class="section-title">Punishment TODO Table</h2>
+        <div class="table-wrapper">
+          <table class="todo-table" id="punishmentTodoTable">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Mistake</th>
+                <th>Apology Asked</th>
+                <th>Punishment</th>
+                <th>Done</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const requestForm = document.getElementById("requestForm");
+      const chargeForm = document.getElementById("chargeForm");
+      const requestStatusMessage = document.getElementById("requestStatusMessage");
+      const requestTodoBody = document.querySelector("#requestTodoTable tbody");
+      const punishmentTodoBody = document.querySelector("#punishmentTodoTable tbody");
+
+      const storageKeys = {
+        requestRows: "relationship_request_rows",
+        punishmentRows: "relationship_punishment_rows",
+      };
+
+      const emailConfig = {
+        publicKey: "YOUR_EMAILJS_PUBLIC_KEY",
+        requestServiceId: "YOUR_EMAILJS_SERVICE_ID",
+        requestTemplateId: "YOUR_REQUEST_TEMPLATE_ID",
+        confirmationTemplateId: "YOUR_CONFIRM_TEMPLATE_ID",
+      };
+
+      let requestRows = JSON.parse(localStorage.getItem(storageKeys.requestRows) || "[]");
+      let punishmentRows = JSON.parse(localStorage.getItem(storageKeys.punishmentRows) || "[]");
+
+      function formatDate(value) {
+        return new Date(value).toLocaleString();
+      }
+
+      function persistRows() {
+        localStorage.setItem(storageKeys.requestRows, JSON.stringify(requestRows));
+        localStorage.setItem(storageKeys.punishmentRows, JSON.stringify(punishmentRows));
+      }
+
+      function renderRequestTable() {
+        requestTodoBody.innerHTML = "";
+        requestRows.forEach((row, index) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${formatDate(row.createdAt)}</td>
+            <td>${row.request}</td>
+            <td>${row.fromEmail}</td>
+            <td>${row.toEmail}</td>
+            <td>
+              <label class="toggle-label">
+                <input type="checkbox" data-request-index="${index}" ${
+            row.emailSent ? "checked" : ""
+          } />
+                <span>${row.emailSent ? "Done" : "Pending"}</span>
+              </label>
+            </td>
+          `;
+          requestTodoBody.appendChild(tr);
+        });
+      }
+
+      function renderPunishmentTable() {
+        punishmentTodoBody.innerHTML = "";
+        punishmentRows.forEach((row, index) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${formatDate(row.createdAt)}</td>
+            <td>${row.mistake}</td>
+            <td>${row.apology}</td>
+            <td>${row.punishment}</td>
+            <td>
+              <label class="toggle-label">
+                <input type="checkbox" data-punishment-index="${index}" ${
+            row.done ? "checked" : ""
+          } />
+                <span>${row.done ? "Done" : "Pending"}</span>
+              </label>
+            </td>
+          `;
+          punishmentTodoBody.appendChild(tr);
+        });
+      }
+
+      function renderTables() {
+        renderRequestTable();
+        renderPunishmentTable();
+      }
+
+      function isEmailConfigured() {
+        return (
+          !emailConfig.publicKey.includes("YOUR_") &&
+          !emailConfig.requestServiceId.includes("YOUR_") &&
+          !emailConfig.requestTemplateId.includes("YOUR_") &&
+          !emailConfig.confirmationTemplateId.includes("YOUR_")
+        );
+      }
+
+      function initializeEmailJS() {
+        if (window.emailjs && isEmailConfigured()) {
+          window.emailjs.init({
+            publicKey: emailConfig.publicKey,
+          });
+          return true;
+        }
+        return false;
+      }
+
+      requestForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const requesterName = document.getElementById("requesterName").value.trim();
+        const requesterEmail = document.getElementById("requesterEmail").value.trim();
+        const boyfriendEmail = document.getElementById("boyfriendEmail").value.trim();
+        const requestMessage = document.getElementById("requestMessage").value.trim();
+
+        const requestRow = {
+          createdAt: Date.now(),
+          request: requestMessage,
+          fromEmail: requesterEmail,
+          toEmail: boyfriendEmail,
+          emailSent: false,
+        };
+
+        requestRows.unshift(requestRow);
+
+        const canSendEmail = initializeEmailJS();
+        if (!canSendEmail) {
+          requestStatusMessage.textContent =
+            "Saved in TODO table. To send real emails, set EmailJS keys inside request-center.html.";
+          requestStatusMessage.className = "status-message warning";
+          persistRows();
+          renderTables();
+          requestForm.reset();
+          return;
+        }
+
+        const templateData = {
+          requester_name: requesterName,
+          requester_email: requesterEmail,
+          boyfriend_email: boyfriendEmail,
+          request_message: requestMessage,
+        };
+
+        try {
+          await window.emailjs.send(
+            emailConfig.requestServiceId,
+            emailConfig.requestTemplateId,
+            templateData
+          );
+
+          await window.emailjs.send(
+            emailConfig.requestServiceId,
+            emailConfig.confirmationTemplateId,
+            templateData
+          );
+
+          requestRow.emailSent = true;
+          requestStatusMessage.textContent =
+            "Request email sent to boyfriend and confirmation sent to her email.";
+          requestStatusMessage.className = "status-message success";
+        } catch (error) {
+          requestStatusMessage.textContent =
+            "Request saved, but email failed. Check EmailJS setup and try again.";
+          requestStatusMessage.className = "status-message error";
+        }
+
+        persistRows();
+        renderTables();
+        requestForm.reset();
+      });
+
+      chargeForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        const mistake = document.getElementById("mistakeDetails").value.trim();
+        const apology = document.getElementById("apologyMessage").value.trim();
+        const punishment = document.getElementById("punishmentText").value.trim();
+
+        punishmentRows.unshift({
+          createdAt: Date.now(),
+          mistake,
+          apology,
+          punishment,
+          done: false,
+        });
+
+        persistRows();
+        renderTables();
+        chargeForm.reset();
+      });
+
+      requestTodoBody.addEventListener("change", (event) => {
+        if (!event.target.matches("[data-request-index]")) return;
+        const index = Number(event.target.dataset.requestIndex);
+        requestRows[index].emailSent = event.target.checked;
+        persistRows();
+        renderRequestTable();
+      });
+
+      punishmentTodoBody.addEventListener("change", (event) => {
+        if (!event.target.matches("[data-punishment-index]")) return;
+        const index = Number(event.target.dataset.punishmentIndex);
+        punishmentRows[index].done = event.target.checked;
+        persistRows();
+        renderPunishmentTable();
+      });
+
+      // Floating heart animation reused from home page style.
+      const heartsContainer = document.querySelector(".hearts-container");
+      const hearts = ["❤️", "💕", "💖", "💗", "💓", "💝"];
+      function createHeart() {
+        const heart = document.createElement("div");
+        heart.className = "floating-heart";
+        heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+        heart.style.left = Math.random() * 100 + "%";
+        heart.style.animationDuration = Math.random() * 3 + 4 + "s";
+        heart.style.opacity = Math.random() * 0.5 + 0.5;
+        heart.style.fontSize = Math.random() * 10 + 20 + "px";
+        heartsContainer.appendChild(heart);
+        setTimeout(() => heart.remove(), 7000);
+      }
+
+      setInterval(() => {
+        if (Math.random() > 0.7) createHeart();
+      }, 2000);
+
+      renderTables();
+    </script>
+  </body>
+</html>
