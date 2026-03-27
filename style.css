@@ -676,6 +676,29 @@ body {
   gap: 8px;
 }
 
+.sync-status {
+  margin-top: 14px;
+  font-size: 0.98rem;
+  color: #7c4a63;
+  text-align: center;
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.5;
+}
+
+.sync-status.success {
+  color: #127d3a;
+}
+
+.sync-status.warning {
+  color: #9c5c00;
+}
+
+.sync-status.error {
+  color: #b3122a;
+}
+
 .cute-panel {
   position: relative;
 }
