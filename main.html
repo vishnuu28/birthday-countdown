@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Our Memory Wall</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="hearts-container"></div>
+    <div class="container request-center-container">
+      <div class="header">
+        <h1 class="title">Our Memory Wall 📸💖</h1>
+        <p class="subtitle">
+          Add photos with feelings, and reply to each memory with love.
+        </p>
+        <div class="site-tabs">
+          <a class="open-request-tab-btn" href="main.html">Main Page</a>
+          <a class="open-request-tab-btn" href="index.html">Birthday Page</a>
+          <a class="open-request-tab-btn" href="request-center.html">Request Tab</a>
+        </div>
+        <p id="memorySyncStatus" class="sync-status" aria-live="polite"></p>
+      </div>
+
+      <section class="request-panel cute-panel">
+        <h2 class="section-title">Add New Memory</h2>
+        <form id="memoryForm" class="panel-form">
+          <label>
+            Upload Photo
+            <input id="memoryPhoto" type="file" accept="image/*" required />
+          </label>
+          <label>
+            What did you feel in this photo?
+            <textarea
+              id="memoryComment"
+              rows="3"
+              placeholder="Write your feeling..."
+              required
+            ></textarea>
+          </label>
+          <label>
+            Feeling Tag
+            <input
+              id="memoryFeeling"
+              type="text"
+              placeholder="happy / emotional / cute / crazy love"
+              required
+            />
+          </label>
+          <button type="submit" class="panel-btn">Add Memory</button>
+          <p id="memoryStatusMessage" class="status-message"></p>
+        </form>
+      </section>
+
+      <section class="request-panel cute-panel">
+        <h2 class="section-title">Memories Feed</h2>
+        <div id="memoriesGrid" class="memories-grid"></div>
+      </section>
+    </div>
+
+    <script type="module" src="main-sync.js"></script>
+  </body>
+</html>

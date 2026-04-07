@@ -8,5 +8,8 @@ service cloud.firestore {
     match /birthdayPunishments/{docId} {
       allow read, write: if true;
     }
+    match /birthdayMemories/{docId} {
+      allow read, write: if true;
+    }
   }
 }
