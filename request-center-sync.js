@@ -7,8 +7,6 @@ import {
   addDoc,
   updateDoc,
   doc,
-  query,
-  orderBy,
 } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
 
 const USE_CLOUD =
@@ -133,26 +131,28 @@ function renderTables() {
   renderPunishmentTable();
 }
 
+function sortByCreatedAtDesc(items) {
+  return items.sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+}
+
 function startCloud() {
   const app = initializeApp(firebaseConfig);
   db = getFirestore(app);
 
-  const wishesQ = query(
-    collection(db, "birthdayWishes"),
-    orderBy("createdAt", "desc")
-  );
   onSnapshot(
-    wishesQ,
+    collection(db, "birthdayWishes"),
     (snap) => {
-      requestRows = snap.docs.map((d) => {
-        const data = d.data();
-        return {
-          id: d.id,
-          createdAt: data.createdAt ?? 0,
-          request: data.request ?? "",
-          done: Boolean(data.done),
-        };
-      });
+      requestRows = sortByCreatedAtDesc(
+        snap.docs.map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            createdAt: data.createdAt ?? 0,
+            request: data.request ?? "",
+            done: Boolean(data.done),
+          };
+        })
+      );
       renderRequestTable();
     },
     (err) => {
@@ -161,24 +161,22 @@ function startCloud() {
     }
   );
 
-  const punishQ = query(
-    collection(db, "birthdayPunishments"),
-    orderBy("createdAt", "desc")
-  );
   onSnapshot(
-    punishQ,
+    collection(db, "birthdayPunishments"),
     (snap) => {
-      punishmentRows = snap.docs.map((d) => {
-        const data = d.data();
-        return {
-          id: d.id,
-          createdAt: data.createdAt ?? 0,
-          mistake: data.mistake ?? "",
-          apology: data.apology ?? "",
-          punishment: data.punishment ?? "",
-          done: Boolean(data.done),
-        };
-      });
+      punishmentRows = sortByCreatedAtDesc(
+        snap.docs.map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            createdAt: data.createdAt ?? 0,
+            mistake: data.mistake ?? "",
+            apology: data.apology ?? "",
+            punishment: data.punishment ?? "",
+            done: Boolean(data.done),
+          };
+        })
+      );
       renderPunishmentTable();
     },
     (err) => {
@@ -206,6 +204,14 @@ requestForm.addEventListener("submit", async (event) => {
     .value.trim();
 
   if (USE_CLOUD) {
+    const tempId = `temp-${Date.now()}`;
+    requestRows.unshift({
+      id: tempId,
+      createdAt: Date.now(),
+      request: requestMessage,
+      done: false,
+    });
+    renderRequestTable();
     try {
       await addDoc(collection(db, "birthdayWishes"), {
         request: requestMessage,
@@ -216,6 +222,8 @@ requestForm.addEventListener("submit", async (event) => {
       requestStatusMessage.className = "status-message success";
     } catch (e) {
       console.error(e);
+      requestRows = requestRows.filter((item) => item.id !== tempId);
+      renderRequestTable();
       requestStatusMessage.textContent = "Could not save — check Firebase.";
       requestStatusMessage.className = "status-message error";
     }
@@ -240,6 +248,16 @@ chargeForm.addEventListener("submit", async (event) => {
   const punishment = document.getElementById("punishmentText").value.trim();
 
   if (USE_CLOUD) {
+    const tempId = `temp-${Date.now()}`;
+    punishmentRows.unshift({
+      id: tempId,
+      createdAt: Date.now(),
+      mistake,
+      apology,
+      punishment,
+      done: false,
+    });
+    renderPunishmentTable();
     try {
       await addDoc(collection(db, "birthdayPunishments"), {
         mistake,
@@ -250,6 +268,8 @@ chargeForm.addEventListener("submit", async (event) => {
       });
     } catch (e) {
       console.error(e);
+      punishmentRows = punishmentRows.filter((item) => item.id !== tempId);
+      renderPunishmentTable();
       alert("Could not save — check Firebase setup.");
     }
   } else {
