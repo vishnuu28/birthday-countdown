@@ -26,6 +26,10 @@ const planForm = document.getElementById("planForm");
 const plansBody = document.querySelector("#plansTable tbody");
 const noteForm = document.getElementById("noteForm");
 const notesList = document.getElementById("notesList");
+const cropModal = document.getElementById("cropModal");
+const cropImage = document.getElementById("cropImage");
+const cancelCropBtn = document.getElementById("cancelCropBtn");
+const saveCropBtn = document.getElementById("saveCropBtn");
 
 const storageKey = "memory_wall_rows";
 const plansKey = "couple_plan_rows";
@@ -34,6 +38,8 @@ let rows = [];
 let plans = [];
 let notes = [];
 let db;
+let cropper = null;
+let croppedImageDataUrl = "";
 
 function setSyncMessage(text, kind) {
   syncStatus.textContent = text;
@@ -152,21 +158,34 @@ function readImageAsDataUrl(file) {
   });
 }
 
-function shrinkImage(dataUrl) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const maxWidth = 900;
-      const scale = Math.min(1, maxWidth / img.width);
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL("image/jpeg", 0.72));
-    };
-    img.src = dataUrl;
-  });
+function closeCropModal(clearSelection = false) {
+  cropModal.classList.remove("active");
+  if (cropper) {
+    cropper.destroy();
+    cropper = null;
+  }
+  if (clearSelection) {
+    photoInput.value = "";
+    croppedImageDataUrl = "";
+  }
+}
+
+function openCropModal(dataUrl) {
+  cropModal.classList.add("active");
+  cropImage.src = dataUrl;
+  cropImage.onload = () => {
+    if (cropper) cropper.destroy();
+    cropper = new window.Cropper(cropImage, {
+      viewMode: 1,
+      autoCropArea: 1,
+      responsive: true,
+      background: false,
+      movable: true,
+      zoomable: true,
+      rotatable: false,
+      scalable: false,
+    });
+  };
 }
 
 if (USE_CLOUD) {
@@ -192,16 +211,46 @@ if (USE_CLOUD) {
   setSyncMessage("Local mode on. Add Firebase for cloud sync.", "warning");
 }
 
-form.addEventListener("submit", async (event) => {
-  event.preventDefault();
+photoInput.addEventListener("change", async () => {
   const file = photoInput.files && photoInput.files[0];
   if (!file) return;
-
   try {
     const raw = await readImageAsDataUrl(file);
-    const imageDataUrl = await shrinkImage(raw);
+    openCropModal(raw);
+    statusMessage.textContent = "Adjust and save crop before adding memory.";
+    statusMessage.className = "status-message warning";
+  } catch (error) {
+    console.error(error);
+    statusMessage.textContent = "Could not open image.";
+    statusMessage.className = "status-message error";
+  }
+});
+
+cancelCropBtn.addEventListener("click", () => closeCropModal(true));
+saveCropBtn.addEventListener("click", () => {
+  if (!cropper) return;
+  const canvas = cropper.getCroppedCanvas({
+    maxWidth: 900,
+    maxHeight: 900,
+    fillColor: "#fff",
+  });
+  croppedImageDataUrl = canvas.toDataURL("image/jpeg", 0.78);
+  closeCropModal(false);
+  statusMessage.textContent = "Photo adjusted. Now click Add Memory.";
+  statusMessage.className = "status-message success";
+});
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!croppedImageDataUrl) {
+    statusMessage.textContent = "Please upload and crop the photo first.";
+    statusMessage.className = "status-message error";
+    return;
+  }
+
+  try {
     const payload = {
-      imageDataUrl,
+      imageDataUrl: croppedImageDataUrl,
       comment: commentInput.value.trim(),
       feeling: feelingInput.value.trim(),
       createdAt: Date.now(),
@@ -217,6 +266,8 @@ form.addEventListener("submit", async (event) => {
     }
 
     form.reset();
+    photoInput.value = "";
+    croppedImageDataUrl = "";
     statusMessage.textContent = "Memory added successfully 💖";
     statusMessage.className = "status-message success";
   } catch (error) {
