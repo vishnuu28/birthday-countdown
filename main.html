@@ -3,21 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Our Memory Wall</title>
+    <title>Our Couple Hub</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <div class="hearts-container"></div>
     <div class="container request-center-container">
       <div class="header">
-        <h1 class="title">Our Memory Wall 📸💖</h1>
+        <h1 class="title">Our Couple Hub 📸💖</h1>
         <p class="subtitle">
-          Add photos with feelings, and reply to each memory with love.
+          Memories, date plans, and love notes in one place.
         </p>
         <div class="site-tabs">
-          <a class="open-request-tab-btn" href="main.html">Main Page</a>
-          <a class="open-request-tab-btn" href="index.html">Birthday Page</a>
-          <a class="open-request-tab-btn" href="request-center.html">Request Tab</a>
+          <a class="open-request-tab-btn" href="main.html">Memories & Plans</a>
+          <a class="open-request-tab-btn" href="index.html">Birthday Countdown</a>
+          <a class="open-request-tab-btn" href="request-center.html">Requests & Tasks</a>
         </div>
         <p id="memorySyncStatus" class="sync-status" aria-live="polite"></p>
       </div>
@@ -55,6 +55,68 @@
       <section class="request-panel cute-panel">
         <h2 class="section-title">Memories Feed</h2>
         <div id="memoriesGrid" class="memories-grid"></div>
+      </section>
+
+      <section class="request-panel cute-panel">
+        <h2 class="section-title">Date Planner</h2>
+        <form id="planForm" class="panel-form">
+          <div class="form-grid">
+            <label>
+              Plan Title
+              <input id="planTitle" type="text" placeholder="Movie date night" required />
+            </label>
+            <label>
+              Date
+              <input id="planDate" type="date" required />
+            </label>
+            <label>
+              Place
+              <input id="planLocation" type="text" placeholder="Cafe / Park / Home" required />
+            </label>
+          </div>
+          <label>
+            Plan Note
+            <textarea id="planNote" rows="2" placeholder="Special details..."></textarea>
+          </label>
+          <button type="submit" class="panel-btn">Save Plan</button>
+        </form>
+        <div class="table-wrapper">
+          <table class="todo-table" id="plansTable">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Title</th>
+                <th>Place</th>
+                <th>Note</th>
+                <th>Done</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="request-panel cute-panel">
+        <h2 class="section-title">Love Notes</h2>
+        <form id="noteForm" class="panel-form">
+          <div class="form-grid">
+            <label>
+              From
+              <select id="noteSender" required>
+                <option value="">Select</option>
+                <option value="He">He</option>
+                <option value="She">She</option>
+              </select>
+            </label>
+            <label>
+              Note
+              <input id="noteText" type="text" placeholder="One sweet line..." required />
+            </label>
+          </div>
+          <button type="submit" class="panel-btn">Add Love Note</button>
+        </form>
+        <div id="notesList" class="notes-list"></div>
       </section>
     </div>
 

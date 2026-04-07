@@ -11,5 +11,11 @@ service cloud.firestore {
     match /birthdayMemories/{docId} {
       allow read, write: if true;
     }
+    match /couplePlans/{docId} {
+      allow read, write: if true;
+    }
+    match /coupleNotes/{docId} {
+      allow read, write: if true;
+    }
   }
 }

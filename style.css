@@ -824,6 +824,29 @@ body {
   padding: 6px 8px;
 }
 
+.notes-list {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.note-item {
+  border: 1px solid #ffd8e7;
+  border-radius: 10px;
+  padding: 10px;
+  background: #fff;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.note-item small {
+  display: block;
+  color: #888;
+  margin-top: 4px;
+}
+
 @media (max-width: 768px) {
   .title {
     font-size: 2.5rem;
@@ -890,6 +913,24 @@ body {
   .container {
     padding: 25px;
   }
+
+  .site-tabs {
+    gap: 8px;
+  }
+
+  .open-request-tab-btn {
+    padding: 10px 14px;
+    font-size: 0.88rem;
+  }
+
+  .reply-form-inline {
+    grid-template-columns: 1fr;
+  }
+
+  .note-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 @media (max-width: 480px) {
@@ -949,6 +990,20 @@ body {
   .message-text {
     font-size: 0.9rem;
     line-height: 1.6;
+  }
+
+  .request-center-container {
+    padding: 18px;
+  }
+
+  .request-panel {
+    padding: 14px;
+  }
+
+  .todo-table th,
+  .todo-table td {
+    font-size: 0.82rem;
+    padding: 7px;
   }
 }
 

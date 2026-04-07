@@ -22,9 +22,17 @@ const feelingInput = document.getElementById("memoryFeeling");
 const statusMessage = document.getElementById("memoryStatusMessage");
 const syncStatus = document.getElementById("memorySyncStatus");
 const memoriesGrid = document.getElementById("memoriesGrid");
+const planForm = document.getElementById("planForm");
+const plansBody = document.querySelector("#plansTable tbody");
+const noteForm = document.getElementById("noteForm");
+const notesList = document.getElementById("notesList");
 
 const storageKey = "memory_wall_rows";
+const plansKey = "couple_plan_rows";
+const notesKey = "couple_note_rows";
 let rows = [];
+let plans = [];
+let notes = [];
 let db;
 
 function setSyncMessage(text, kind) {
@@ -34,10 +42,14 @@ function setSyncMessage(text, kind) {
 
 function saveLocal() {
   localStorage.setItem(storageKey, JSON.stringify(rows));
+  localStorage.setItem(plansKey, JSON.stringify(plans));
+  localStorage.setItem(notesKey, JSON.stringify(notes));
 }
 
 function loadLocal() {
   rows = JSON.parse(localStorage.getItem(storageKey) || "[]");
+  plans = JSON.parse(localStorage.getItem(plansKey) || "[]");
+  notes = JSON.parse(localStorage.getItem(notesKey) || "[]");
 }
 
 function formatDate(value) {
@@ -78,6 +90,59 @@ function render() {
     });
 }
 
+function renderPlans() {
+  plansBody.innerHTML = "";
+  plans
+    .slice()
+    .sort((a, b) => String(a.planDate).localeCompare(String(b.planDate)))
+    .forEach((row, index) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${row.planDate || "-"}</td>
+        <td>${row.title || ""}</td>
+        <td>${row.location || ""}</td>
+        <td>${row.note || ""}</td>
+        <td>
+          <label class="toggle-label">
+            <input type="checkbox" data-plan-toggle="${row.id || index}" ${
+        row.done ? "checked" : ""
+      } />
+            <span>${row.done ? "Done" : "Pending"}</span>
+          </label>
+        </td>
+        <td class="row-actions">
+          <button class="row-btn edit-btn" data-plan-edit="${row.id || index}">Update</button>
+          <button class="row-btn delete-btn" data-plan-delete="${
+            row.id || index
+          }">Delete</button>
+        </td>
+      `;
+      plansBody.appendChild(tr);
+    });
+}
+
+function renderNotes() {
+  notesList.innerHTML = "";
+  notes
+    .slice()
+    .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0))
+    .forEach((row, index) => {
+      const item = document.createElement("div");
+      item.className = "note-item";
+      item.innerHTML = `
+        <div>
+          <strong>${row.sender}</strong> - ${row.text}
+          <small>${formatDate(row.createdAt)}</small>
+        </div>
+        <div class="row-actions">
+          <button class="row-btn edit-btn" data-note-edit="${row.id || index}">Update</button>
+          <button class="row-btn delete-btn" data-note-delete="${row.id || index}">Delete</button>
+        </div>
+      `;
+      notesList.appendChild(item);
+    });
+}
+
 function readImageAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -110,10 +175,20 @@ if (USE_CLOUD) {
     rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     render();
   });
+  onSnapshot(collection(db, "couplePlans"), (snap) => {
+    plans = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    renderPlans();
+  });
+  onSnapshot(collection(db, "coupleNotes"), (snap) => {
+    notes = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    renderNotes();
+  });
   setSyncMessage("Live sync on for memory wall 💞", "success");
 } else {
   loadLocal();
   render();
+  renderPlans();
+  renderNotes();
   setSyncMessage("Local mode on. Add Firebase for cloud sync.", "warning");
 }
 
@@ -184,6 +259,122 @@ memoriesGrid.addEventListener("click", async (event) => {
       rows.splice(Number(key), 1);
       saveLocal();
       render();
+    }
+  }
+});
+
+planForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const payload = {
+    title: document.getElementById("planTitle").value.trim(),
+    planDate: document.getElementById("planDate").value,
+    location: document.getElementById("planLocation").value.trim(),
+    note: document.getElementById("planNote").value.trim(),
+    done: false,
+    createdAt: Date.now(),
+  };
+
+  if (USE_CLOUD) {
+    await addDoc(collection(db, "couplePlans"), payload);
+  } else {
+    plans.push(payload);
+    saveLocal();
+    renderPlans();
+  }
+  planForm.reset();
+});
+
+noteForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const payload = {
+    sender: document.getElementById("noteSender").value,
+    text: document.getElementById("noteText").value.trim(),
+    createdAt: Date.now(),
+  };
+  if (USE_CLOUD) {
+    await addDoc(collection(db, "coupleNotes"), payload);
+  } else {
+    notes.unshift(payload);
+    saveLocal();
+    renderNotes();
+  }
+  noteForm.reset();
+});
+
+plansBody.addEventListener("click", async (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) return;
+
+  if (target instanceof HTMLInputElement && target.dataset.planToggle !== undefined) {
+    const key = target.dataset.planToggle;
+    if (USE_CLOUD) {
+      await updateDoc(doc(db, "couplePlans", key), { done: target.checked });
+    } else {
+      plans[Number(key)].done = target.checked;
+      saveLocal();
+      renderPlans();
+    }
+    return;
+  }
+
+  if (!(target instanceof HTMLButtonElement)) return;
+  if (target.dataset.planEdit !== undefined) {
+    const key = target.dataset.planEdit;
+    const row = USE_CLOUD ? plans.find((p) => p.id === key) : plans[Number(key)];
+    if (!row) return;
+    const title = window.prompt("Update plan title:", row.title);
+    if (!title || !title.trim()) return;
+    const note = window.prompt("Update note:", row.note || "") || "";
+    if (USE_CLOUD) {
+      await updateDoc(doc(db, "couplePlans", key), { title: title.trim(), note: note.trim() });
+    } else {
+      plans[Number(key)].title = title.trim();
+      plans[Number(key)].note = note.trim();
+      saveLocal();
+      renderPlans();
+    }
+  }
+  if (target.dataset.planDelete !== undefined) {
+    const key = target.dataset.planDelete;
+    if (!window.confirm("Delete this plan?")) return;
+    if (USE_CLOUD) {
+      await deleteDoc(doc(db, "couplePlans", key));
+    } else {
+      plans.splice(Number(key), 1);
+      saveLocal();
+      renderPlans();
+    }
+  }
+});
+
+notesList.addEventListener("click", async (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLButtonElement)) return;
+
+  if (target.dataset.noteEdit !== undefined) {
+    const key = target.dataset.noteEdit;
+    const row = USE_CLOUD ? notes.find((n) => n.id === key) : notes[Number(key)];
+    if (!row) return;
+    const text = window.prompt("Update note:", row.text);
+    if (!text || !text.trim()) return;
+    if (USE_CLOUD) {
+      await updateDoc(doc(db, "coupleNotes", key), { text: text.trim() });
+    } else {
+      notes[Number(key)].text = text.trim();
+      saveLocal();
+      renderNotes();
+    }
+  }
+
+  if (target.dataset.noteDelete !== undefined) {
+    const key = target.dataset.noteDelete;
+    if (!window.confirm("Delete this note?")) return;
+    if (USE_CLOUD) {
+      await deleteDoc(doc(db, "coupleNotes", key));
+    } else {
+      notes.splice(Number(key), 1);
+      saveLocal();
+      renderNotes();
     }
   }
 });
