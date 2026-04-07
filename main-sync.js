@@ -30,6 +30,8 @@ const cropModal = document.getElementById("cropModal");
 const cropImage = document.getElementById("cropImage");
 const cancelCropBtn = document.getElementById("cancelCropBtn");
 const saveCropBtn = document.getElementById("saveCropBtn");
+const selectedPreviewWrap = document.getElementById("selectedPreviewWrap");
+const selectedPreviewImage = document.getElementById("selectedPreviewImage");
 
 const storageKey = "memory_wall_rows";
 const plansKey = "couple_plan_rows";
@@ -167,6 +169,8 @@ function closeCropModal(clearSelection = false) {
   if (clearSelection) {
     photoInput.value = "";
     croppedImageDataUrl = "";
+    selectedPreviewWrap.classList.remove("show");
+    selectedPreviewImage.removeAttribute("src");
   }
 }
 
@@ -184,6 +188,7 @@ function openCropModal(dataUrl) {
       zoomable: true,
       rotatable: false,
       scalable: false,
+      preview: ".crop-preview-box",
     });
   };
 }
@@ -235,6 +240,8 @@ saveCropBtn.addEventListener("click", () => {
     fillColor: "#fff",
   });
   croppedImageDataUrl = canvas.toDataURL("image/jpeg", 0.78);
+  selectedPreviewImage.src = croppedImageDataUrl;
+  selectedPreviewWrap.classList.add("show");
   closeCropModal(false);
   statusMessage.textContent = "Photo adjusted. Now click Add Memory.";
   statusMessage.className = "status-message success";
@@ -268,6 +275,8 @@ form.addEventListener("submit", async (event) => {
     form.reset();
     photoInput.value = "";
     croppedImageDataUrl = "";
+    selectedPreviewWrap.classList.remove("show");
+    selectedPreviewImage.removeAttribute("src");
     statusMessage.textContent = "Memory added successfully 💖";
     statusMessage.className = "status-message success";
   } catch (error) {

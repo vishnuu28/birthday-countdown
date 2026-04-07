@@ -33,6 +33,10 @@
             Upload Photo
             <input id="memoryPhoto" type="file" accept="image/*" required />
           </label>
+          <div id="selectedPreviewWrap" class="selected-preview-wrap">
+            <p class="preview-label">Final preview (how it will be saved):</p>
+            <img id="selectedPreviewImage" class="selected-preview-image" alt="Cropped preview" />
+          </div>
           <label>
             What did you feel in this photo?
             <textarea
@@ -130,6 +134,10 @@
         <p>Drag and crop as you like, then save.</p>
         <div class="crop-image-wrap">
           <img id="cropImage" alt="Crop preview" />
+        </div>
+        <div class="crop-preview-panel">
+          <p>Final look preview</p>
+          <div class="crop-preview-box"></div>
         </div>
         <div class="crop-actions">
           <button id="cancelCropBtn" type="button" class="row-btn delete-btn">
