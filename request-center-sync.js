@@ -6,6 +6,7 @@ import {
   onSnapshot,
   addDoc,
   updateDoc,
+  deleteDoc,
   doc,
 } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
 
@@ -83,9 +84,20 @@ function renderRequestTable() {
     label.appendChild(input);
     label.appendChild(span);
     tdDone.appendChild(label);
+    const tdActions = document.createElement("td");
+    tdActions.className = "row-actions";
+    tdActions.innerHTML = `
+      <button type="button" class="row-btn edit-btn" data-request-edit="${
+        row.id || index
+      }">Update</button>
+      <button type="button" class="row-btn delete-btn" data-request-delete="${
+        row.id || index
+      }">Delete</button>
+    `;
     tr.appendChild(tdDate);
     tr.appendChild(tdWish);
     tr.appendChild(tdDone);
+    tr.appendChild(tdActions);
     requestTodoBody.appendChild(tr);
   });
 }
@@ -121,7 +133,18 @@ function renderPunishmentTable() {
     label.appendChild(input);
     label.appendChild(span);
     tdDone.appendChild(label);
+    const tdActions = document.createElement("td");
+    tdActions.className = "row-actions";
+    tdActions.innerHTML = `
+      <button type="button" class="row-btn edit-btn" data-punish-edit="${
+        row.id || index
+      }">Update</button>
+      <button type="button" class="row-btn delete-btn" data-punish-delete="${
+        row.id || index
+      }">Delete</button>
+    `;
     tr.appendChild(tdDone);
+    tr.appendChild(tdActions);
     punishmentTodoBody.appendChild(tr);
   });
 }
@@ -331,6 +354,90 @@ punishmentTodoBody.addEventListener("change", async (event) => {
     punishmentRows[index].done = t.checked;
     persistLocal();
     renderPunishmentTable();
+  }
+});
+
+requestTodoBody.addEventListener("click", async (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLButtonElement)) return;
+
+  if (target.dataset.requestEdit !== undefined) {
+    const rowKey = target.dataset.requestEdit;
+    const row = USE_CLOUD
+      ? requestRows.find((item) => item.id === rowKey)
+      : requestRows[Number(rowKey)];
+    if (!row) return;
+    const updatedWish = window.prompt("Update wish:", row.request);
+    if (!updatedWish || !updatedWish.trim()) return;
+
+    if (USE_CLOUD && row.id) {
+      await updateDoc(doc(db, "birthdayWishes", row.id), {
+        request: updatedWish.trim(),
+      });
+    } else {
+      requestRows[Number(rowKey)].request = updatedWish.trim();
+      persistLocal();
+      renderRequestTable();
+    }
+  }
+
+  if (target.dataset.requestDelete !== undefined) {
+    const rowKey = target.dataset.requestDelete;
+    if (!window.confirm("Delete this wish?")) return;
+    if (USE_CLOUD) {
+      await deleteDoc(doc(db, "birthdayWishes", rowKey));
+    } else {
+      requestRows.splice(Number(rowKey), 1);
+      persistLocal();
+      renderRequestTable();
+    }
+  }
+});
+
+punishmentTodoBody.addEventListener("click", async (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLButtonElement)) return;
+
+  if (target.dataset.punishEdit !== undefined) {
+    const rowKey = target.dataset.punishEdit;
+    const row = USE_CLOUD
+      ? punishmentRows.find((item) => item.id === rowKey)
+      : punishmentRows[Number(rowKey)];
+    if (!row) return;
+
+    const updatedMistake = window.prompt("Update mistake:", row.mistake);
+    if (!updatedMistake || !updatedMistake.trim()) return;
+    const updatedApology = window.prompt("Update apology text:", row.apology);
+    if (!updatedApology || !updatedApology.trim()) return;
+    const updatedPunishment = window.prompt("Update punishment:", row.punishment);
+    if (!updatedPunishment || !updatedPunishment.trim()) return;
+
+    if (USE_CLOUD && row.id) {
+      await updateDoc(doc(db, "birthdayPunishments", row.id), {
+        mistake: updatedMistake.trim(),
+        apology: updatedApology.trim(),
+        punishment: updatedPunishment.trim(),
+      });
+    } else {
+      const index = Number(rowKey);
+      punishmentRows[index].mistake = updatedMistake.trim();
+      punishmentRows[index].apology = updatedApology.trim();
+      punishmentRows[index].punishment = updatedPunishment.trim();
+      persistLocal();
+      renderPunishmentTable();
+    }
+  }
+
+  if (target.dataset.punishDelete !== undefined) {
+    const rowKey = target.dataset.punishDelete;
+    if (!window.confirm("Delete this punishment entry?")) return;
+    if (USE_CLOUD) {
+      await deleteDoc(doc(db, "birthdayPunishments", rowKey));
+    } else {
+      punishmentRows.splice(Number(rowKey), 1);
+      persistLocal();
+      renderPunishmentTable();
+    }
   }
 });
 

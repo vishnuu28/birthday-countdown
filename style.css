@@ -676,6 +676,29 @@ body {
   font-size: 0.92rem;
 }
 
+.row-actions {
+  white-space: nowrap;
+}
+
+.row-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 5px 9px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  margin-right: 6px;
+}
+
+.edit-btn {
+  background: #ffe3ec;
+  color: #7f2d51;
+}
+
+.delete-btn {
+  background: #ffdada;
+  color: #9b1c31;
+}
+
 .todo-table th {
   background: #ffe6f0;
   color: #7f2d51;
