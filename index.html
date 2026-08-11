@@ -75,6 +75,24 @@
         </div>
       </div>
 
+      <!-- Mystery Love Jar Section -->
+      <section class="love-jar-container">
+        <span class="love-jar-icon">🍯</span>
+        <h2 class="love-jar-title">Our Mystery Love Jar</h2>
+        <p class="love-jar-sub">Tap below to draw a sweet reason why I love you!</p>
+        <button id="jarDrawBtn" class="jar-draw-btn" type="button">
+          Draw a Love Note 💌
+        </button>
+      </section>
+
+      <!-- Couple Romantic Quiz Game Section -->
+      <section class="quiz-card" id="quizCard">
+        <h2 class="section-title">How Well Do You Know Us? 🎮💖</h2>
+        <div class="quiz-question" id="quizQuestion">Loading question...</div>
+        <div class="quiz-options" id="quizOptions"></div>
+        <div class="quiz-result" id="quizResult"></div>
+      </section>
+
       <div class="words-section">
         <h2 class="section-title">
           15 Days, 30 Wonderful Words That Describe You
@@ -631,28 +649,28 @@
       </div>
     </div>
 
+    <!-- Mystery Love Note Modal -->
+    <div class="modal-overlay" id="loveNoteModal">
+      <div class="modal-container" style="max-width: 500px; text-align: center;">
+        <button class="modal-close" id="loveNoteClose">&times;</button>
+        <h2 style="color: #fff; margin-bottom: 15px;">💌 Secret Love Note</h2>
+        <div style="background: rgba(255,255,255,0.95); padding: 25px; border-radius: 18px; color: #880e4f; font-size: 1.15rem; font-weight: 600; line-height: 1.7;" id="loveNoteText"></div>
+      </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <script type="module" src="audio-player.js"></script>
+    <script type="module" src="interactive-features.js"></script>
     <script type="module">
       import { audioEngine } from "./audio-player.js";
       import { firebaseConfig } from "./firebase-config.js";
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
       import { getFirestore, doc, onSnapshot, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
 
-      // Dynamically calculate the next upcoming November 30th
-      function getNextBirthdayDate() {
-        const now = new Date();
-        let year = now.getFullYear();
-        let target = new Date(`${year}-11-30T00:00:00`);
-        if (now.getTime() > target.getTime()) {
-          target = new Date(`${year + 1}-11-30T00:00:00`);
-        }
-        return target;
-      }
-
-      const targetBirthday = getNextBirthdayDate();
+      // Explicitly target November 30, 2026
+      const targetBirthday = new Date("2026-11-30T00:00:00");
       const targetDate = targetBirthday.getTime();
-      document.getElementById("footerYearText").textContent = `Counting down to November 30, ${targetBirthday.getFullYear()}`;
+      document.getElementById("footerYearText").textContent = `Counting down to November 30, 2026`;
 
       function updateCountdown() {
         const now = new Date().getTime();
