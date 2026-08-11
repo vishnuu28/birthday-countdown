@@ -14,9 +14,22 @@
         <p class="subtitle">Celebrating someone special on November 30th</p>
         <div class="site-tabs">
           <a class="open-request-tab-btn" href="main.html">Memories & Plans</a>
-          <a class="open-request-tab-btn" href="index.html">Birthday Countdown</a>
+          <a class="open-request-tab-btn active" href="index.html">Birthday Countdown</a>
           <a class="open-request-tab-btn" href="request-center.html">Requests & Tasks</a>
         </div>
+      </div>
+
+      <!-- Real-time Kiss & Hug Counter Bar -->
+      <div class="kiss-hug-bar">
+        <button id="sendKissBtn" class="love-action-btn kiss-btn" type="button">
+          💋 Send Kiss <span class="love-count-badge" id="kissCountBadge">0</span>
+        </button>
+        <button id="sendHugBtn" class="love-action-btn hug-btn" type="button">
+          🫂 Send Hug <span class="love-count-badge" id="hugCountBadge">0</span>
+        </button>
+        <button id="sendMissBtn" class="love-action-btn miss-btn" type="button">
+          💌 Miss You <span class="love-count-badge" id="missCountBadge">0</span>
+        </button>
       </div>
 
       <div class="message-section">
@@ -54,6 +67,11 @@
             <div class="time-value" id="seconds">00</div>
             <div class="time-label">Seconds</div>
           </div>
+        </div>
+        <div class="celebrate-btn-wrap">
+          <button id="celebrateBtn" class="celebrate-btn" type="button">
+            🎉 Celebrate Birthday Now! 🎂
+          </button>
         </div>
       </div>
 
@@ -586,7 +604,7 @@
       </div>
 
       <div class="footer">
-        <p>Counting down to November 30, 2025</p>
+        <p id="footerYearText">Counting down to November 30th</p>
       </div>
     </div>
 
@@ -604,63 +622,68 @@
       </div>
     </div>
 
-    <script>
-      // Set the target date: November 30, 2025
-      const targetDate = new Date("2025-11-30T00:00:00").getTime();
+    <!-- Fullscreen Lightbox Modal -->
+    <div class="lightbox-overlay" id="lightboxOverlay">
+      <div class="lightbox-content">
+        <button class="lightbox-close" id="lightboxClose">&times;</button>
+        <img class="lightbox-image" id="lightboxImage" src="" alt="Full view" />
+        <p class="lightbox-caption" id="lightboxCaption"></p>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <script type="module" src="audio-player.js"></script>
+    <script type="module">
+      import { audioEngine } from "./audio-player.js";
+      import { firebaseConfig } from "./firebase-config.js";
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
+      import { getFirestore, doc, onSnapshot, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+
+      // Dynamically calculate the next upcoming November 30th
+      function getNextBirthdayDate() {
+        const now = new Date();
+        let year = now.getFullYear();
+        let target = new Date(`${year}-11-30T00:00:00`);
+        if (now.getTime() > target.getTime()) {
+          target = new Date(`${year + 1}-11-30T00:00:00`);
+        }
+        return target;
+      }
+
+      const targetBirthday = getNextBirthdayDate();
+      const targetDate = targetBirthday.getTime();
+      document.getElementById("footerYearText").textContent = `Counting down to November 30, ${targetBirthday.getFullYear()}`;
 
       function updateCountdown() {
         const now = new Date().getTime();
         const distance = targetDate - now;
 
-        if (distance < 0) {
+        if (distance <= 0) {
           document.getElementById("days").textContent = "00";
           document.getElementById("hours").textContent = "00";
           document.getElementById("minutes").textContent = "00";
           document.getElementById("seconds").textContent = "00";
+          triggerBirthdayCelebration();
           return;
         }
 
         const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-        const hours = Math.floor(
-          (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-        );
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-        document.getElementById("days").textContent = String(days).padStart(
-          2,
-          "0"
-        );
-        document.getElementById("hours").textContent = String(hours).padStart(
-          2,
-          "0"
-        );
-        document.getElementById("minutes").textContent = String(
-          minutes
-        ).padStart(2, "0");
-        document.getElementById("seconds").textContent = String(
-          seconds
-        ).padStart(2, "0");
+        document.getElementById("days").textContent = String(days).padStart(2, "0");
+        document.getElementById("hours").textContent = String(hours).padStart(2, "0");
+        document.getElementById("minutes").textContent = String(minutes).padStart(2, "0");
+        document.getElementById("seconds").textContent = String(seconds).padStart(2, "0");
       }
 
-      // Update countdown immediately and then every second
       updateCountdown();
       setInterval(updateCountdown, 1000);
 
-      // Create floating hearts animation
+      // Floating hearts animation
       const heartsContainer = document.querySelector(".hearts-container");
-      const hearts = [
-        "❤️",
-        "💕",
-        "💖",
-        "💗",
-        "💓",
-        "💝",
-        "💞",
-        "💟",
-        "🧡",
-        "💛",
-      ];
+      const hearts = ["❤️", "💕", "💖", "💗", "💓", "💝", "💞", "💟", "🧡", "💛"];
 
       function createHeart() {
         const heart = document.createElement("div");
@@ -671,83 +694,133 @@
         heart.style.opacity = Math.random() * 0.5 + 0.5;
         heart.style.fontSize = Math.random() * 10 + 20 + "px";
         heartsContainer.appendChild(heart);
-
-        setTimeout(() => {
-          heart.remove();
-        }, 7000);
+        setTimeout(() => heart.remove(), 7000);
       }
 
-      // Create hearts on page load
-      for (let i = 0; i < 30; i++) {
-        setTimeout(() => {
-          createHeart();
-        }, i * 200);
+      for (let i = 0; i < 25; i++) {
+        setTimeout(() => createHeart(), i * 200);
       }
-
-      // Continue creating hearts periodically
       setInterval(() => {
-        if (Math.random() > 0.7) {
-          createHeart();
-        }
+        if (Math.random() > 0.6) createHeart();
       }, 2000);
 
-      // Modal functionality
+      // Kiss / Hug / Miss Real-time Counter Sync
+      let loveCounts = { kisses: 0, hugs: 0, misses: 0 };
+      const USE_CLOUD = Boolean(firebaseConfig.apiKey) && !String(firebaseConfig.apiKey).includes("YOUR_");
+      let db = null;
+
+      function renderLoveCounts() {
+        document.getElementById("kissCountBadge").textContent = loveCounts.kisses || 0;
+        document.getElementById("hugCountBadge").textContent = loveCounts.hugs || 0;
+        document.getElementById("missCountBadge").textContent = loveCounts.misses || 0;
+      }
+
+      if (USE_CLOUD) {
+        db = getFirestore(initializeApp(firebaseConfig));
+        onSnapshot(doc(db, "coupleKisses", "counts"), (snap) => {
+          if (snap.exists()) {
+            loveCounts = snap.data();
+            renderLoveCounts();
+          }
+        });
+      } else {
+        loveCounts = JSON.parse(localStorage.getItem("couple_love_counts") || '{"kisses":0,"hugs":0,"misses":0}');
+        renderLoveCounts();
+      }
+
+      function spawnParticle(emoji, event) {
+        const particle = document.createElement("div");
+        particle.className = "kiss-particle";
+        particle.textContent = emoji;
+        particle.style.left = (event.clientX || window.innerWidth / 2) + "px";
+        particle.style.top = (event.clientY || window.innerHeight / 2) + "px";
+        document.body.appendChild(particle);
+        setTimeout(() => particle.remove(), 1400);
+      }
+
+      async function incrementLoveCount(field, emoji, event) {
+        loveCounts[field] = (loveCounts[field] || 0) + 1;
+        renderLoveCounts();
+        spawnParticle(emoji, event);
+        if (field === 'kisses') audioEngine.playKissSound();
+        else audioEngine.playChimeSound();
+
+        if (USE_CLOUD && db) {
+          try {
+            await setDoc(doc(db, "coupleKisses", "counts"), { [field]: increment(1) }, { merge: true });
+          } catch(e) { console.error(e); }
+        } else {
+          localStorage.setItem("couple_love_counts", JSON.stringify(loveCounts));
+        }
+      }
+
+      document.getElementById("sendKissBtn").addEventListener("click", (e) => incrementLoveCount("kisses", "💋", e));
+      document.getElementById("sendHugBtn").addEventListener("click", (e) => incrementLoveCount("hugs", "🫂", e));
+      document.getElementById("sendMissBtn").addEventListener("click", (e) => incrementLoveCount("misses", "💌", e));
+
+      // Celebration Confetti
+      function triggerBirthdayCelebration() {
+        audioEngine.playChimeSound();
+        if (window.confetti) {
+          window.confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+          setTimeout(() => window.confetti({ particleCount: 150, spread: 100, origin: { y: 0.4 } }), 400);
+        }
+      }
+
+      document.getElementById("celebrateBtn").addEventListener("click", () => {
+        triggerBirthdayCelebration();
+      });
+
+      // Modal & Lightbox
       const modalOverlay = document.getElementById("modalOverlay");
       const modalClose = document.getElementById("modalClose");
       const modalContent = document.getElementById("modalContent");
       const modalDayTitle = document.getElementById("modalDayTitle");
       const modalHearts = document.querySelector(".modal-hearts");
       const dayCards = document.querySelectorAll(".day-card");
+      const lightboxOverlay = document.getElementById("lightboxOverlay");
+      const lightboxImage = document.getElementById("lightboxImage");
+      const lightboxCaption = document.getElementById("lightboxCaption");
+      const lightboxClose = document.getElementById("lightboxClose");
 
-      // Create hearts in modal
-      function createModalHeart() {
-        const heart = document.createElement("div");
-        heart.className = "modal-heart";
-        const hearts = ["❤️", "💕", "💖", "💗", "💓", "💝", "💞"];
-        heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
-        heart.style.left = Math.random() * 100 + "%";
-        heart.style.animationDuration = Math.random() * 2 + 3 + "s";
-        heart.style.fontSize = Math.random() * 15 + 25 + "px";
-        modalHearts.appendChild(heart);
-
-        setTimeout(() => {
-          heart.remove();
-        }, 5000);
+      function openLightbox(src, caption) {
+        lightboxImage.src = src;
+        lightboxCaption.textContent = caption || "";
+        lightboxOverlay.classList.add("active");
       }
 
-      // Start creating hearts in modal when opened
-      let modalHeartInterval;
+      lightboxClose.addEventListener("click", () => lightboxOverlay.classList.remove("active"));
+      lightboxOverlay.addEventListener("click", (e) => {
+        if (e.target === lightboxOverlay) lightboxOverlay.classList.remove("active");
+      });
 
+      let modalHeartInterval;
       function startModalHearts() {
-        for (let i = 0; i < 20; i++) {
-          setTimeout(() => createModalHeart(), i * 150);
-        }
         modalHeartInterval = setInterval(() => {
           if (Math.random() > 0.5) {
-            createModalHeart();
+            const heart = document.createElement("div");
+            heart.className = "modal-heart";
+            heart.textContent = ["❤️", "💕", "💖", "💗"][Math.floor(Math.random() * 4)];
+            heart.style.left = Math.random() * 100 + "%";
+            heart.style.animationDuration = Math.random() * 2 + 3 + "s";
+            modalHearts.appendChild(heart);
+            setTimeout(() => heart.remove(), 5000);
           }
         }, 800);
       }
 
       function stopModalHearts() {
-        if (modalHeartInterval) {
-          clearInterval(modalHeartInterval);
-        }
+        if (modalHeartInterval) clearInterval(modalHeartInterval);
         modalHearts.innerHTML = "";
       }
 
-      // Open modal with card content
       dayCards.forEach((card) => {
         card.addEventListener("click", () => {
           const dayNumber = card.querySelector(".day-number").textContent;
           const wordItems = card.querySelectorAll(".word-item");
-
           modalDayTitle.textContent = dayNumber;
-
-          // Clear previous content
           modalContent.innerHTML = "";
 
-          // Add each word item to modal
           wordItems.forEach((item) => {
             const img = item.querySelector(".word-image");
             const wordText = item.querySelector(".word-text");
@@ -760,17 +833,19 @@
               <h3 class="modal-word-title">${wordText.textContent}</h3>
               <p class="modal-word-description">${description.textContent}</p>
             `;
+            modalItem.querySelector(".modal-word-image").addEventListener("click", (e) => {
+              e.stopPropagation();
+              openLightbox(img.src, wordText.textContent + ": " + description.textContent);
+            });
             modalContent.appendChild(modalItem);
           });
 
-          // Show modal
           modalOverlay.classList.add("active");
           document.body.style.overflow = "hidden";
           startModalHearts();
         });
       });
 
-      // Close modal
       function closeModal() {
         modalOverlay.classList.remove("active");
         document.body.style.overflow = "auto";
@@ -779,17 +854,15 @@
 
       modalClose.addEventListener("click", closeModal);
       modalOverlay.addEventListener("click", (e) => {
-        if (e.target === modalOverlay) {
-          closeModal();
-        }
+        if (e.target === modalOverlay) closeModal();
       });
-
-      // Close on Escape key
       document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && modalOverlay.classList.contains("active")) {
+        if (e.key === "Escape") {
           closeModal();
+          lightboxOverlay.classList.remove("active");
         }
       });
     </script>
   </body>
 </html>
+

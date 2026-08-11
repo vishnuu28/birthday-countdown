@@ -1,7 +1,6 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Personal couple app: tighten later (e.g. Firebase Auth) if the URL is public.
     match /birthdayWishes/{docId} {
       allow read, write: if true;
     }
@@ -15,6 +14,15 @@ service cloud.firestore {
       allow read, write: if true;
     }
     match /coupleNotes/{docId} {
+      allow read, write: if true;
+    }
+    match /coupleKisses/{docId} {
+      allow read, write: if true;
+    }
+    match /coupleMilestones/{docId} {
+      allow read, write: if true;
+    }
+    match /loveCoupons/{docId} {
       allow read, write: if true;
     }
   }

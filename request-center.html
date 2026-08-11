@@ -17,10 +17,34 @@
         <div class="site-tabs">
           <a class="open-request-tab-btn" href="main.html">Memories & Plans</a>
           <a class="open-request-tab-btn" href="index.html">Birthday Countdown</a>
-          <a class="open-request-tab-btn" href="request-center.html">Requests & Tasks</a>
+          <a class="open-request-tab-btn active" href="request-center.html">Requests & Tasks</a>
         </div>
         <p id="syncStatus" class="sync-status" aria-live="polite"></p>
       </div>
+
+      <!-- Real-time Kiss & Hug Counter Bar -->
+      <div class="kiss-hug-bar">
+        <button id="sendKissBtn" class="love-action-btn kiss-btn" type="button">
+          💋 Send Kiss <span class="love-count-badge" id="kissCountBadge">0</span>
+        </button>
+        <button id="sendHugBtn" class="love-action-btn hug-btn" type="button">
+          🫂 Send Hug <span class="love-count-badge" id="hugCountBadge">0</span>
+        </button>
+        <button id="sendMissBtn" class="love-action-btn miss-btn" type="button">
+          💌 Miss You <span class="love-count-badge" id="missCountBadge">0</span>
+        </button>
+      </div>
+
+      <!-- Daily Scratch Card / Reason Why I Love You -->
+      <section class="scratch-card-container">
+        <div class="scratch-secret-text" id="dailyLoveReasonText">
+          "Your smile brightens up my darkest days and your kindness inspires me every single second." 💖
+        </div>
+        <div class="scratch-cover" id="scratchCover">
+          <div class="scratch-cover-title">🎁 Daily Secret Note</div>
+          <div class="scratch-cover-sub">Tap to reveal today's reason why I love you! ✨</div>
+        </div>
+      </section>
 
       <section class="request-panel cute-panel">
         <h2 class="section-title">Wish Corner 💌</h2>
@@ -116,6 +140,7 @@
       </section>
     </div>
 
+    <script type="module" src="audio-player.js"></script>
     <script type="module" src="request-center-sync.js"></script>
   </body>
 </html>

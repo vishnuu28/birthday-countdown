@@ -8,7 +8,10 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  setDoc,
+  increment,
 } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+import { audioEngine } from "./audio-player.js";
 
 const USE_CLOUD =
   Boolean(firebaseConfig.apiKey) &&
@@ -25,12 +28,20 @@ const requestStatusMessage = document.getElementById("requestStatusMessage");
 const syncStatusEl = document.getElementById("syncStatus");
 const requestTodoBody = document.querySelector("#requestTodoTable tbody");
 const punishmentTodoBody = document.querySelector("#punishmentTodoTable tbody");
+const scratchCover = document.getElementById("scratchCover");
+const dailyLoveReasonText = document.getElementById("dailyLoveReasonText");
 
 let requestRows = [];
 let punishmentRows = [];
+let loveCounts = { kisses: 0, hugs: 0, misses: 0 };
 let db;
 
+function generateUniqueId() {
+  return "loc-" + Date.now() + "-" + Math.random().toString(36).substring(2, 8);
+}
+
 function formatDate(value) {
+  if (!value) return "-";
   return new Date(value).toLocaleString();
 }
 
@@ -41,28 +52,25 @@ function setSyncMessage(text, kind) {
 }
 
 function loadLocal() {
-  requestRows = JSON.parse(
-    localStorage.getItem(storageKeys.requestRows) || "[]"
-  );
-  punishmentRows = JSON.parse(
-    localStorage.getItem(storageKeys.punishmentRows) || "[]"
-  );
+  requestRows = JSON.parse(localStorage.getItem(storageKeys.requestRows) || "[]").map((r) => ({
+    id: r.id || generateUniqueId(),
+    ...r,
+  }));
+  punishmentRows = JSON.parse(localStorage.getItem(storageKeys.punishmentRows) || "[]").map((p) => ({
+    id: p.id || generateUniqueId(),
+    ...p,
+  }));
 }
 
 function persistLocal() {
-  localStorage.setItem(
-    storageKeys.requestRows,
-    JSON.stringify(requestRows)
-  );
-  localStorage.setItem(
-    storageKeys.punishmentRows,
-    JSON.stringify(punishmentRows)
-  );
+  localStorage.setItem(storageKeys.requestRows, JSON.stringify(requestRows));
+  localStorage.setItem(storageKeys.punishmentRows, JSON.stringify(punishmentRows));
 }
 
 function renderRequestTable() {
+  if (!requestTodoBody) return;
   requestTodoBody.innerHTML = "";
-  requestRows.forEach((row, index) => {
+  requestRows.forEach((row) => {
     const tr = document.createElement("tr");
     const tdDate = document.createElement("td");
     tdDate.textContent = formatDate(row.createdAt);
@@ -74,11 +82,8 @@ function renderRequestTable() {
     const input = document.createElement("input");
     input.type = "checkbox";
     input.checked = Boolean(row.done);
-    if (USE_CLOUD && row.id) {
-      input.dataset.requestId = row.id;
-    } else {
-      input.dataset.requestIndex = String(index);
-    }
+    input.dataset.requestId = row.id;
+
     const span = document.createElement("span");
     span.textContent = row.done ? "Done" : "Pending";
     label.appendChild(input);
@@ -87,12 +92,8 @@ function renderRequestTable() {
     const tdActions = document.createElement("td");
     tdActions.className = "row-actions";
     tdActions.innerHTML = `
-      <button type="button" class="row-btn edit-btn" data-request-edit="${
-        row.id || index
-      }">Update</button>
-      <button type="button" class="row-btn delete-btn" data-request-delete="${
-        row.id || index
-      }">Delete</button>
+      <button type="button" class="row-btn edit-btn" data-request-edit="${row.id}">Update</button>
+      <button type="button" class="row-btn delete-btn" data-request-delete="${row.id}">Delete</button>
     `;
     tr.appendChild(tdDate);
     tr.appendChild(tdWish);
@@ -103,8 +104,9 @@ function renderRequestTable() {
 }
 
 function renderPunishmentTable() {
+  if (!punishmentTodoBody) return;
   punishmentTodoBody.innerHTML = "";
-  punishmentRows.forEach((row, index) => {
+  punishmentRows.forEach((row) => {
     const tr = document.createElement("tr");
     const cells = [
       formatDate(row.createdAt),
@@ -123,11 +125,8 @@ function renderPunishmentTable() {
     const input = document.createElement("input");
     input.type = "checkbox";
     input.checked = Boolean(row.done);
-    if (USE_CLOUD && row.id) {
-      input.dataset.punishmentId = row.id;
-    } else {
-      input.dataset.punishmentIndex = String(index);
-    }
+    input.dataset.punishmentId = row.id;
+
     const span = document.createElement("span");
     span.textContent = row.done ? "Done" : "Pending";
     label.appendChild(input);
@@ -136,12 +135,8 @@ function renderPunishmentTable() {
     const tdActions = document.createElement("td");
     tdActions.className = "row-actions";
     tdActions.innerHTML = `
-      <button type="button" class="row-btn edit-btn" data-punish-edit="${
-        row.id || index
-      }">Update</button>
-      <button type="button" class="row-btn delete-btn" data-punish-delete="${
-        row.id || index
-      }">Delete</button>
+      <button type="button" class="row-btn edit-btn" data-punish-edit="${row.id}">Update</button>
+      <button type="button" class="row-btn delete-btn" data-punish-delete="${row.id}">Delete</button>
     `;
     tr.appendChild(tdDone);
     tr.appendChild(tdActions);
@@ -152,6 +147,15 @@ function renderPunishmentTable() {
 function renderTables() {
   renderRequestTable();
   renderPunishmentTable();
+}
+
+function renderLoveCounts() {
+  const kissBadge = document.getElementById("kissCountBadge");
+  const hugBadge = document.getElementById("hugCountBadge");
+  const missBadge = document.getElementById("missCountBadge");
+  if (kissBadge) kissBadge.textContent = loveCounts.kisses || 0;
+  if (hugBadge) hugBadge.textContent = loveCounts.hugs || 0;
+  if (missBadge) missBadge.textContent = loveCounts.misses || 0;
 }
 
 function sortByCreatedAtDesc(items) {
@@ -208,256 +212,290 @@ function startCloud() {
     }
   );
 
-  setSyncMessage("Live sync on — same list on her phone and your PC 💞", "success");
+  onSnapshot(doc(db, "coupleKisses", "counts"), (snap) => {
+    if (snap.exists()) {
+      loveCounts = snap.data();
+      renderLoveCounts();
+    }
+  });
+
+  setSyncMessage("Live sync on — real-time on phone and PC 💞", "success");
 }
 
 function startLocal() {
   loadLocal();
   renderTables();
-  setSyncMessage(
-    "Local only — add your Firebase config in firebase-config.js for live sync.",
-    "warning"
-  );
+  loveCounts = JSON.parse(localStorage.getItem("couple_love_counts") || '{"kisses":0,"hugs":0,"misses":0}');
+  renderLoveCounts();
+  setSyncMessage("Local mode active. Add Firebase config for live cloud sync.", "warning");
 }
 
-requestForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const requestMessage = document
-    .getElementById("requestMessage")
-    .value.trim();
+if (requestForm) {
+  requestForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const requestMessage = document.getElementById("requestMessage").value.trim();
 
-  if (USE_CLOUD) {
-    const tempId = `temp-${Date.now()}`;
-    requestRows.unshift({
-      id: tempId,
-      createdAt: Date.now(),
-      request: requestMessage,
-      done: false,
-    });
-    renderRequestTable();
-    try {
-      await addDoc(collection(db, "birthdayWishes"), {
-        request: requestMessage,
+    if (USE_CLOUD) {
+      try {
+        await addDoc(collection(db, "birthdayWishes"), {
+          request: requestMessage,
+          createdAt: Date.now(),
+          done: false,
+        });
+        if (requestStatusMessage) {
+          requestStatusMessage.textContent = "Saved with love 💖 (synced)";
+          requestStatusMessage.className = "status-message success";
+        }
+      } catch (e) {
+        console.error(e);
+        if (requestStatusMessage) {
+          requestStatusMessage.textContent = "Could not save — check Firebase.";
+          requestStatusMessage.className = "status-message error";
+        }
+      }
+    } else {
+      requestRows.unshift({
+        id: generateUniqueId(),
         createdAt: Date.now(),
+        request: requestMessage,
         done: false,
       });
-      requestStatusMessage.textContent = "Saved with love 💖 (synced)";
-      requestStatusMessage.className = "status-message success";
-    } catch (e) {
-      console.error(e);
-      requestRows = requestRows.filter((item) => item.id !== tempId);
-      renderRequestTable();
-      requestStatusMessage.textContent = "Could not save — check Firebase.";
-      requestStatusMessage.className = "status-message error";
+      if (requestStatusMessage) {
+        requestStatusMessage.textContent = "Saved with love 💖";
+        requestStatusMessage.className = "status-message success";
+      }
+      persistLocal();
+      renderTables();
     }
-  } else {
-    requestRows.unshift({
-      createdAt: Date.now(),
-      request: requestMessage,
-      done: false,
-    });
-    requestStatusMessage.textContent = "Saved with love 💖";
-    requestStatusMessage.className = "status-message success";
-    persistLocal();
-    renderTables();
-  }
-  requestForm.reset();
-});
+    requestForm.reset();
+    audioEngine.playChimeSound();
+  });
+}
 
-chargeForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const mistake = document.getElementById("mistakeDetails").value.trim();
-  const apology = document.getElementById("apologyMessage").value.trim();
-  const punishment = document.getElementById("punishmentText").value.trim();
+if (chargeForm) {
+  chargeForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const mistake = document.getElementById("mistakeDetails").value.trim();
+    const apology = document.getElementById("apologyMessage").value.trim();
+    const punishment = document.getElementById("punishmentText").value.trim();
 
-  if (USE_CLOUD) {
-    const tempId = `temp-${Date.now()}`;
-    punishmentRows.unshift({
-      id: tempId,
-      createdAt: Date.now(),
-      mistake,
-      apology,
-      punishment,
-      done: false,
-    });
-    renderPunishmentTable();
-    try {
-      await addDoc(collection(db, "birthdayPunishments"), {
+    if (USE_CLOUD) {
+      try {
+        await addDoc(collection(db, "birthdayPunishments"), {
+          mistake,
+          apology,
+          punishment,
+          createdAt: Date.now(),
+          done: false,
+        });
+      } catch (e) {
+        console.error(e);
+        alert("Could not save — check Firebase setup.");
+      }
+    } else {
+      punishmentRows.unshift({
+        id: generateUniqueId(),
+        createdAt: Date.now(),
         mistake,
         apology,
         punishment,
-        createdAt: Date.now(),
         done: false,
       });
-    } catch (e) {
-      console.error(e);
-      punishmentRows = punishmentRows.filter((item) => item.id !== tempId);
-      renderPunishmentTable();
-      alert("Could not save — check Firebase setup.");
-    }
-  } else {
-    punishmentRows.unshift({
-      createdAt: Date.now(),
-      mistake,
-      apology,
-      punishment,
-      done: false,
-    });
-    persistLocal();
-    renderTables();
-  }
-  chargeForm.reset();
-});
-
-requestTodoBody.addEventListener("change", async (event) => {
-  const t = event.target;
-  if (!(t instanceof HTMLInputElement) || t.type !== "checkbox") return;
-
-  if (USE_CLOUD && t.dataset.requestId) {
-    try {
-      await updateDoc(doc(db, "birthdayWishes", t.dataset.requestId), {
-        done: t.checked,
-      });
-    } catch (e) {
-      console.error(e);
-      t.checked = !t.checked;
-    }
-    return;
-  }
-
-  if (t.dataset.requestIndex !== undefined) {
-    const index = Number(t.dataset.requestIndex);
-    requestRows[index].done = t.checked;
-    persistLocal();
-    renderRequestTable();
-  }
-});
-
-punishmentTodoBody.addEventListener("change", async (event) => {
-  const t = event.target;
-  if (!(t instanceof HTMLInputElement) || t.type !== "checkbox") return;
-
-  if (USE_CLOUD && t.dataset.punishmentId) {
-    try {
-      await updateDoc(doc(db, "birthdayPunishments", t.dataset.punishmentId), {
-        done: t.checked,
-      });
-    } catch (e) {
-      console.error(e);
-      t.checked = !t.checked;
-    }
-    return;
-  }
-
-  if (t.dataset.punishmentIndex !== undefined) {
-    const index = Number(t.dataset.punishmentIndex);
-    punishmentRows[index].done = t.checked;
-    persistLocal();
-    renderPunishmentTable();
-  }
-});
-
-requestTodoBody.addEventListener("click", async (event) => {
-  const target = event.target;
-  if (!(target instanceof HTMLButtonElement)) return;
-
-  if (target.dataset.requestEdit !== undefined) {
-    const rowKey = target.dataset.requestEdit;
-    const row = USE_CLOUD
-      ? requestRows.find((item) => item.id === rowKey)
-      : requestRows[Number(rowKey)];
-    if (!row) return;
-    const updatedWish = window.prompt("Update wish:", row.request);
-    if (!updatedWish || !updatedWish.trim()) return;
-
-    if (USE_CLOUD && row.id) {
-      await updateDoc(doc(db, "birthdayWishes", row.id), {
-        request: updatedWish.trim(),
-      });
-    } else {
-      requestRows[Number(rowKey)].request = updatedWish.trim();
       persistLocal();
-      renderRequestTable();
+      renderTables();
     }
-  }
-
-  if (target.dataset.requestDelete !== undefined) {
-    const rowKey = target.dataset.requestDelete;
-    if (!window.confirm("Delete this wish?")) return;
-    if (USE_CLOUD) {
-      await deleteDoc(doc(db, "birthdayWishes", rowKey));
-    } else {
-      requestRows.splice(Number(rowKey), 1);
-      persistLocal();
-      renderRequestTable();
-    }
-  }
-});
-
-punishmentTodoBody.addEventListener("click", async (event) => {
-  const target = event.target;
-  if (!(target instanceof HTMLButtonElement)) return;
-
-  if (target.dataset.punishEdit !== undefined) {
-    const rowKey = target.dataset.punishEdit;
-    const row = USE_CLOUD
-      ? punishmentRows.find((item) => item.id === rowKey)
-      : punishmentRows[Number(rowKey)];
-    if (!row) return;
-
-    const updatedMistake = window.prompt("Update mistake:", row.mistake);
-    if (!updatedMistake || !updatedMistake.trim()) return;
-    const updatedApology = window.prompt("Update apology text:", row.apology);
-    if (!updatedApology || !updatedApology.trim()) return;
-    const updatedPunishment = window.prompt("Update punishment:", row.punishment);
-    if (!updatedPunishment || !updatedPunishment.trim()) return;
-
-    if (USE_CLOUD && row.id) {
-      await updateDoc(doc(db, "birthdayPunishments", row.id), {
-        mistake: updatedMistake.trim(),
-        apology: updatedApology.trim(),
-        punishment: updatedPunishment.trim(),
-      });
-    } else {
-      const index = Number(rowKey);
-      punishmentRows[index].mistake = updatedMistake.trim();
-      punishmentRows[index].apology = updatedApology.trim();
-      punishmentRows[index].punishment = updatedPunishment.trim();
-      persistLocal();
-      renderPunishmentTable();
-    }
-  }
-
-  if (target.dataset.punishDelete !== undefined) {
-    const rowKey = target.dataset.punishDelete;
-    if (!window.confirm("Delete this punishment entry?")) return;
-    if (USE_CLOUD) {
-      await deleteDoc(doc(db, "birthdayPunishments", rowKey));
-    } else {
-      punishmentRows.splice(Number(rowKey), 1);
-      persistLocal();
-      renderPunishmentTable();
-    }
-  }
-});
-
-const heartsContainer = document.querySelector(".hearts-container");
-const hearts = ["❤️", "💕", "💖", "💗", "💓", "💝"];
-function createHeart() {
-  const heart = document.createElement("div");
-  heart.className = "floating-heart";
-  heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
-  heart.style.left = Math.random() * 100 + "%";
-  heart.style.animationDuration = Math.random() * 3 + 4 + "s";
-  heart.style.opacity = Math.random() * 0.5 + 0.5;
-  heart.style.fontSize = Math.random() * 10 + 20 + "px";
-  heartsContainer.appendChild(heart);
-  setTimeout(() => heart.remove(), 7000);
+    chargeForm.reset();
+    audioEngine.playChimeSound();
+  });
 }
 
-setInterval(() => {
-  if (Math.random() > 0.7) createHeart();
-}, 2000);
+if (requestTodoBody) {
+  requestTodoBody.addEventListener("change", async (event) => {
+    const t = event.target;
+    if (!(t instanceof HTMLInputElement) || t.type !== "checkbox") return;
+    const key = t.dataset.requestId;
+
+    if (USE_CLOUD && key && !key.startsWith("loc-")) {
+      try {
+        await updateDoc(doc(db, "birthdayWishes", key), {
+          done: t.checked,
+        });
+      } catch (e) {
+        console.error(e);
+        t.checked = !t.checked;
+      }
+    } else {
+      const item = requestRows.find((r) => String(r.id) === String(key));
+      if (item) {
+        item.done = t.checked;
+        persistLocal();
+        renderRequestTable();
+      }
+    }
+  });
+
+  requestTodoBody.addEventListener("click", async (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLButtonElement)) return;
+
+    if (target.dataset.requestEdit) {
+      const rowKey = target.dataset.requestEdit;
+      const row = requestRows.find((r) => String(r.id) === String(rowKey));
+      if (!row) return;
+      const updatedWish = window.prompt("Update wish:", row.request);
+      if (!updatedWish || !updatedWish.trim()) return;
+
+      if (USE_CLOUD && !rowKey.startsWith("loc-")) {
+        await updateDoc(doc(db, "birthdayWishes", rowKey), {
+          request: updatedWish.trim(),
+        });
+      } else {
+        row.request = updatedWish.trim();
+        persistLocal();
+        renderRequestTable();
+      }
+    }
+
+    if (target.dataset.requestDelete) {
+      const rowKey = target.dataset.requestDelete;
+      if (!window.confirm("Delete this wish?")) return;
+      if (USE_CLOUD && !rowKey.startsWith("loc-")) {
+        await deleteDoc(doc(db, "birthdayWishes", rowKey));
+      } else {
+        requestRows = requestRows.filter((r) => String(r.id) !== String(rowKey));
+        persistLocal();
+        renderRequestTable();
+      }
+    }
+  });
+}
+
+if (punishmentTodoBody) {
+  punishmentTodoBody.addEventListener("change", async (event) => {
+    const t = event.target;
+    if (!(t instanceof HTMLInputElement) || t.type !== "checkbox") return;
+    const key = t.dataset.punishmentId;
+
+    if (USE_CLOUD && key && !key.startsWith("loc-")) {
+      try {
+        await updateDoc(doc(db, "birthdayPunishments", key), {
+          done: t.checked,
+        });
+      } catch (e) {
+        console.error(e);
+        t.checked = !t.checked;
+      }
+    } else {
+      const item = punishmentRows.find((p) => String(p.id) === String(key));
+      if (item) {
+        item.done = t.checked;
+        persistLocal();
+        renderPunishmentTable();
+      }
+    }
+  });
+
+  punishmentTodoBody.addEventListener("click", async (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLButtonElement)) return;
+
+    if (target.dataset.punishEdit) {
+      const rowKey = target.dataset.punishEdit;
+      const row = punishmentRows.find((p) => String(p.id) === String(rowKey));
+      if (!row) return;
+
+      const updatedMistake = window.prompt("Update mistake:", row.mistake);
+      if (!updatedMistake || !updatedMistake.trim()) return;
+      const updatedApology = window.prompt("Update apology text:", row.apology);
+      if (!updatedApology || !updatedApology.trim()) return;
+      const updatedPunishment = window.prompt("Update punishment:", row.punishment);
+      if (!updatedPunishment || !updatedPunishment.trim()) return;
+
+      if (USE_CLOUD && !rowKey.startsWith("loc-")) {
+        await updateDoc(doc(db, "birthdayPunishments", rowKey), {
+          mistake: updatedMistake.trim(),
+          apology: updatedApology.trim(),
+          punishment: updatedPunishment.trim(),
+        });
+      } else {
+        row.mistake = updatedMistake.trim();
+        row.apology = updatedApology.trim();
+        row.punishment = updatedPunishment.trim();
+        persistLocal();
+        renderPunishmentTable();
+      }
+    }
+
+    if (target.dataset.punishDelete) {
+      const rowKey = target.dataset.punishDelete;
+      if (!window.confirm("Delete this punishment entry?")) return;
+      if (USE_CLOUD && !rowKey.startsWith("loc-")) {
+        await deleteDoc(doc(db, "birthdayPunishments", rowKey));
+      } else {
+        punishmentRows = punishmentRows.filter((p) => String(p.id) !== String(rowKey));
+        persistLocal();
+        renderPunishmentTable();
+      }
+    }
+  });
+}
+
+// Daily Scratch Card secret reasons
+const secretReasons = [
+  "\"Your smile brightens up my darkest days and your kindness inspires me every single second.\" 💖",
+  "\"The way you laugh from your heart is my absolute favorite sound in the world.\" 🥰",
+  "\"You make ordinary days feel like magical adventures just by being with me.\" ✨",
+  "\"I love your gentle warmth, your intelligence, and your adorable playful side.\" 🌸",
+  "\"Every single day I wake up feeling like the luckiest person because I have you.\" 💌",
+  "\"Your eyes carry a universe of beauty that I never want to stop looking into.\" 🌌",
+  "\"Thank you for loving me, listening to me, and being my safest place in this world.\" 🫂"
+];
+
+if (dailyLoveReasonText) {
+  const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
+  dailyLoveReasonText.textContent = secretReasons[dayOfYear % secretReasons.length];
+}
+
+if (scratchCover) {
+  scratchCover.addEventListener("click", () => {
+    scratchCover.classList.add("scratched");
+    audioEngine.playChimeSound();
+  });
+}
+
+// Kiss / Hug / Miss buttons
+function spawnParticle(emoji, event) {
+  const particle = document.createElement("div");
+  particle.className = "kiss-particle";
+  particle.textContent = emoji;
+  particle.style.left = (event.clientX || window.innerWidth / 2) + "px";
+  particle.style.top = (event.clientY || window.innerHeight / 2) + "px";
+  document.body.appendChild(particle);
+  setTimeout(() => particle.remove(), 1400);
+}
+
+async function incrementLoveCount(field, emoji, event) {
+  loveCounts[field] = (loveCounts[field] || 0) + 1;
+  renderLoveCounts();
+  spawnParticle(emoji, event);
+  if (field === 'kisses') audioEngine.playKissSound();
+  else audioEngine.playChimeSound();
+
+  if (USE_CLOUD && db) {
+    try {
+      await setDoc(doc(db, "coupleKisses", "counts"), { [field]: increment(1) }, { merge: true });
+    } catch(e) { console.error(e); }
+  } else {
+    localStorage.setItem("couple_love_counts", JSON.stringify(loveCounts));
+  }
+}
+
+const sendKissBtn = document.getElementById("sendKissBtn");
+const sendHugBtn = document.getElementById("sendHugBtn");
+const sendMissBtn = document.getElementById("sendMissBtn");
+if (sendKissBtn) sendKissBtn.addEventListener("click", (e) => incrementLoveCount("kisses", "💋", e));
+if (sendHugBtn) sendHugBtn.addEventListener("click", (e) => incrementLoveCount("hugs", "🫂", e));
+if (sendMissBtn) sendMissBtn.addEventListener("click", (e) => incrementLoveCount("misses", "💌", e));
 
 if (USE_CLOUD) {
   startCloud();

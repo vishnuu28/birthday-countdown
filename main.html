@@ -16,14 +16,27 @@
       <div class="header">
         <h1 class="title">Our Couple Hub 📸💖</h1>
         <p class="subtitle">
-          Memories, date plans, and love notes in one place.
+          Memories, date plans, milestones, love coupons, and notes in one place.
         </p>
         <div class="site-tabs">
-          <a class="open-request-tab-btn" href="main.html">Memories & Plans</a>
+          <a class="open-request-tab-btn active" href="main.html">Memories & Plans</a>
           <a class="open-request-tab-btn" href="index.html">Birthday Countdown</a>
           <a class="open-request-tab-btn" href="request-center.html">Requests & Tasks</a>
         </div>
         <p id="memorySyncStatus" class="sync-status" aria-live="polite"></p>
+      </div>
+
+      <!-- Real-time Kiss & Hug Counter Bar -->
+      <div class="kiss-hug-bar">
+        <button id="sendKissBtn" class="love-action-btn kiss-btn" type="button">
+          💋 Send Kiss <span class="love-count-badge" id="kissCountBadge">0</span>
+        </button>
+        <button id="sendHugBtn" class="love-action-btn hug-btn" type="button">
+          🫂 Send Hug <span class="love-count-badge" id="hugCountBadge">0</span>
+        </button>
+        <button id="sendMissBtn" class="love-action-btn miss-btn" type="button">
+          💌 Miss You <span class="love-count-badge" id="missCountBadge">0</span>
+        </button>
       </div>
 
       <section class="request-panel cute-panel">
@@ -63,6 +76,49 @@
       <section class="request-panel cute-panel">
         <h2 class="section-title">Memories Feed</h2>
         <div id="memoriesGrid" class="memories-grid"></div>
+      </section>
+
+      <!-- Love Story Milestones Section -->
+      <section class="request-panel cute-panel milestones-section">
+        <h2 class="section-title">Our Love Story Milestones ⏳✨</h2>
+        <form id="milestoneForm" class="panel-form">
+          <div class="form-grid">
+            <label>
+              Milestone Title
+              <input id="milestoneTitle" type="text" placeholder="First Met / First Kiss / Anniversary" required />
+            </label>
+            <label>
+              Date
+              <input id="milestoneDate" type="date" required />
+            </label>
+          </div>
+          <label>
+            Story Details
+            <textarea id="milestoneDesc" rows="2" placeholder="Tell the memory story..." required></textarea>
+          </label>
+          <button type="submit" class="panel-btn">Add Milestone</button>
+        </form>
+        <div id="milestonesTimeline" class="milestones-timeline"></div>
+      </section>
+
+      <!-- Redeemable Love Coupons Section -->
+      <section class="request-panel cute-panel coupons-section">
+        <h2 class="section-title">Redeemable Love Coupons 🎟️💞</h2>
+        <p class="panel-help">Tap 'Redeem' to claim your special coupon anytime!</p>
+        <form id="couponForm" class="panel-form">
+          <div class="form-grid">
+            <label>
+              Coupon Title
+              <input id="couponTitle" type="text" placeholder="1 Free Back Massage" required />
+            </label>
+            <label>
+              Description / Terms
+              <input id="couponDesc" type="text" placeholder="Valid anytime you feel tired!" required />
+            </label>
+          </div>
+          <button type="submit" class="panel-btn">Create Custom Coupon</button>
+        </form>
+        <div id="couponsGrid" class="coupons-grid"></div>
       </section>
 
       <section class="request-panel cute-panel">
@@ -128,6 +184,7 @@
       </section>
     </div>
 
+    <!-- Crop Modal -->
     <div id="cropModal" class="crop-modal">
       <div class="crop-modal-content">
         <h3>Adjust Your Photo</h3>
@@ -150,7 +207,17 @@
       </div>
     </div>
 
+    <!-- Fullscreen Lightbox Modal -->
+    <div class="lightbox-overlay" id="lightboxOverlay">
+      <div class="lightbox-content">
+        <button class="lightbox-close" id="lightboxClose">&times;</button>
+        <img class="lightbox-image" id="lightboxImage" src="" alt="Full view" />
+        <p class="lightbox-caption" id="lightboxCaption"></p>
+      </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
+    <script type="module" src="audio-player.js"></script>
     <script type="module" src="main-sync.js"></script>
   </body>
 </html>
